@@ -71,14 +71,12 @@ void pathfinder(){
 	create_action_array();
 	printf("Order of Actions: \n");
 	for (int i = 0; i < action_array_size; i++){
-		if (action_array[i] == 0)
-			printf("UP\n");
-		else if (action_array[i] == 1)
-				printf("DOWN\n");
+		if (action_array[i] == 1)
+			printf("Forward Cell\n");
 		else if (action_array[i] == 2)
-				printf("LEFT\n");
+				printf("Left Cell\n");
 		else if (action_array[i] == 3)
-				printf("RIGHT\n");
+				printf("Right Cell\n");
 
 	}
 
@@ -87,7 +85,13 @@ void create_action_array(){
 	current_pos[0] = start_pos[0];
 	current_pos[1] = start_pos[1];
 	int neighbors[4];
-	int action = 0;
+	/* actions can be
+		1: move to the cell in front
+		2: move to the cell to the right
+		3: move in the cell to the left
+	*/
+	int direction = -1;
+	int action = 1;
 
 	while (1){
 
@@ -122,26 +126,44 @@ void create_action_array(){
 			neighbors[3] =  world[ current_pos[0]] [ current_pos[ 1] + 1];
 		}
 		int min;
-		//give priority to the previous action
-		min = neighbors[action];
+		if (direction == -1)
+			direction = 1;
+		else	//give priority to the previous action
+			action = 1;
+
+		min = neighbors[direction];
 
 		for (int i = 0; i < 4; i++){
 			if (neighbors[i] < min){
-
 				min = neighbors[i];
-				action = i;
+				if ( (direction - i) == 0){	// same orientation as previous step
+					direction = 1;
+					action = 1;	// keep going forward
+				}
+				else if (direction - i == -1){ // go to right cell
+					direction = 2;
+					action = 2;
+				}
+				else if (direction - i == -2){ // go to left cell
+					direction = 3;
+					action = 3;
+				}
+				else{	// go back
+					direction = 0;
+					action = 0;
+				}
 			}
 		}
 		action_array[action_array_size] = action;
 		action_array_size++;
 		// update current position
-		if (action == 0)// go up
+		if (direction == 0)// go up
 			current_pos[0] = current_pos[0] - 1;
-		else if (action == 1)// go down
+		else if (direction == 1)// go down
 			current_pos[0] = current_pos[0] + 1;
-		else if (action == 2)// go left
+		else if (direction == 2)// go right
 			current_pos[1] = current_pos[1] - 1;
-		else //go right
+		else //go left
 			current_pos[1] = current_pos[1] + 1;
 		// check if goal reached
 		int goalReached = 0;
