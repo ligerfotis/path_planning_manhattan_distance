@@ -15,10 +15,10 @@
 
 #define MAX_OBSTACLES 25 /* maximum number of obstacles */
 
-#define MAX_X 10 /* maximum number of tiles on x axis */
-#define MAX_Y 16 /* maximum number of tiles on y axis */
+#define MAX_X 16 /* maximum number of tiles on x axis */
+#define MAX_Y 10 /* maximum number of tiles on y axis */
 #define MAX_GOALS 5
-int world[MAX_X-1][MAX_Y-1];
+int world[MAX_Y-1][MAX_X-1];
 
 int num_obstacles = 13; /* number of obstacles */
 double obstacle[MAX_OBSTACLES][2] = /* obstacle locations */
@@ -45,7 +45,7 @@ int manhattan_distance(int x1, int x2, int y1, int y2);
 int min_element(int* dist_array, int size);
 void print_array(int array[], int length);
 void print_2d_array(int array[][MAX_Y], int rows, int columns);
-void print_world();
+void print_world(int pos_x, int pos_y);
 void create_action_array();
 int compareArray(int* a,int* b,int size);
 
@@ -54,11 +54,11 @@ void pathfinder(){
 
 	// fill obstacle cells with INF value
 	for (int i = 0; i < num_obstacles; i++){
-		world[(int)(obstacle[i][0] / 0.305) - 1][(int)(obstacle[i][1] / 0.305) - 1] = INT_MAX;
+		world[(int)(obstacle[i][1] / 0.305) - 1][(int)(obstacle[i][0] / 0.305) - 1] = INT_MAX;
 	}
 	// calculate the Manhattan Distance for the free cells
-	for (int row=0; row < MAX_X-1; row++){
-		for (int col=0; col < MAX_Y-1; col++){
+	for (int row=0; row < MAX_Y-1; row++){
+		for (int col=0; col < MAX_X-1; col++){
 			if (world[row][col] != INT_MAX){
 				int dist = get_min_manhattan_dist(row, col);
 				world[row][col] = dist;
@@ -66,16 +66,15 @@ void pathfinder(){
 		}
 
 	}
-	print_world();
 	// calculate the action order
 	create_action_array();
 	printf("Order of Actions: \n");
 	for (int i = 0; i < action_array_size; i++){
-		if (action_array[i] == 1)
+		if (action_array[i] == 0)
 			printf("Forward Cell\n");
-		else if (action_array[i] == 2)
+		else if (action_array[i] == 1)
 				printf("Left Cell\n");
-		else if (action_array[i] == 3)
+		else if (action_array[i] == 2)
 				printf("Right Cell\n");
 
 	}
@@ -84,87 +83,110 @@ void pathfinder(){
 void create_action_array(){
 	current_pos[0] = start_pos[0];
 	current_pos[1] = start_pos[1];
+	print_world(current_pos[0], current_pos[1]);
+
 	int neighbors[4];
 	/* actions can be
 		1: move to the cell in front
 		2: move to the cell to the right
 		3: move in the cell to the left
 	*/
+	int prev_direction = -1;
 	int direction = -1;
-	int action = 1;
+	int action = 0;
 
 	while (1){
 
 		if (current_pos[0] == 0){
 			neighbors[0] = INT_MAX;
-			neighbors[1] = world[ current_pos[0] + 1] [ current_pos[ 1]];
-			neighbors[2] = world[ current_pos[0]] [ current_pos[ 1] - 1];
-			neighbors[3] =  world[ current_pos[0]] [ current_pos[ 1] + 1];
+			neighbors[1] =  world[ current_pos[0]] [ current_pos[ 1] + 1];
+			neighbors[2] = world[ current_pos[0] + 1] [ current_pos[ 1]];
+			neighbors[3] = world[ current_pos[0]] [ current_pos[ 1] - 1];
 		}
 		else if (current_pos[0] == MAX_X-1){
 			neighbors[0] =  world[ current_pos[0] -1] [ current_pos[ 1]];
-			neighbors[1] = INT_MAX;
-			neighbors[2] = world[ current_pos[0]] [ current_pos[ 1] - 1];
-			neighbors[3] =  world[ current_pos[0]] [ current_pos[ 1] + 1];
+			neighbors[1] =  world[ current_pos[0]] [ current_pos[ 1] + 1];
+			neighbors[2] = INT_MAX;
+			neighbors[3] = world[ current_pos[0]] [ current_pos[ 1] - 1];
 		}
 		else if (current_pos[1] == 0){
 			neighbors[0] =  world[ current_pos[0] -1] [ current_pos[ 1]];
-			neighbors[1] = world[ current_pos[0] + 1] [ current_pos[ 1]];
-			neighbors[2] = INT_MAX;
-			neighbors[3] =  world[ current_pos[0]] [ current_pos[ 1] + 1];
+			neighbors[1] =  world[ current_pos[0]] [ current_pos[ 1] + 1];
+			neighbors[2] = world[ current_pos[0] + 1] [ current_pos[ 1]];
+			neighbors[3] = INT_MAX;
 		}
 		else if(current_pos[1] == MAX_Y-1){
 			neighbors[0] =  world[ current_pos[0] -1] [ current_pos[ 1]];
-			neighbors[1] = world[ current_pos[0] + 1] [ current_pos[ 1]];
-			neighbors[2] = world[ current_pos[0]] [ current_pos[ 1] - 1];
-			neighbors[3] = INT_MAX;
+			neighbors[1] = INT_MAX;
+			neighbors[2] = world[ current_pos[0] + 1] [ current_pos[ 1]];
+			neighbors[3] = world[ current_pos[0]] [ current_pos[ 1] - 1];
 		}
 		else{
-			neighbors[0] =  world[ current_pos[0] -1] [ current_pos[ 1]];
-			neighbors[1] = world[ current_pos[0] + 1] [ current_pos[ 1]];
-			neighbors[2] = world[ current_pos[0]] [ current_pos[ 1] - 1];
-			neighbors[3] =  world[ current_pos[0]] [ current_pos[ 1] + 1];
+			neighbors[0] =  world[ current_pos[0] -1] [ current_pos[1]];
+			neighbors[1] =  world[ current_pos[0]] [ current_pos[1] + 1];
+			neighbors[2] = world[ current_pos[0] + 1] [ current_pos[1]];
+			neighbors[3] = world[ current_pos[0]] [ current_pos[1] - 1];
 		}
 		int min;
-		if (direction == -1)
+		if (direction == -1){
+			prev_direction = 1;
 			direction = 1;
+		}
 		else	//give priority to the previous action
-			action = 1;
+			action = 0;
 
 		min = neighbors[direction];
-
-		for (int i = 0; i < 4; i++){
-			if (neighbors[i] < min){
+		int i = 0;
+		for (i = 0; i < 4; i++){
+			if (neighbors[i] < min || (neighbors[i] <= min && i==1)){
 				min = neighbors[i];
-				if ( (direction - i) == 0){	// same orientation as previous step
-					direction = 1;
-					action = 1;	// keep going forward
-				}
-				else if (direction - i == -1){ // go to right cell
-					direction = 2;
-					action = 2;
-				}
-				else if (direction - i == -2){ // go to left cell
-					direction = 3;
-					action = 3;
-				}
-				else{	// go back
-					direction = 0;
+				if ( direction - prev_direction == 1 || direction - prev_direction == -3)	// turn left
+					action = 1;	// turn left
+				else if ( direction - prev_direction == -1 || direction - prev_direction == 3) // turn right
+					action = 2; // turn right
+				else if (direction - prev_direction == 0) //continue straight
 					action = 0;
-				}
+				else	// turn left
+					action = 1;
+				direction = i;
 			}
 		}
 		action_array[action_array_size] = action;
 		action_array_size++;
 		// update current position
-		if (direction == 0)// go up
-			current_pos[0] = current_pos[0] - 1;
-		else if (direction == 1)// go down
-			current_pos[0] = current_pos[0] + 1;
-		else if (direction == 2)// go right
-			current_pos[1] = current_pos[1] - 1;
-		else //go left
-			current_pos[1] = current_pos[1] + 1;
+		if (action == 0){// continue straight
+			if (prev_direction == 0)
+				current_pos[0] = current_pos[0] - 1;
+			else if (prev_direction == 1)
+				current_pos[1] = current_pos[1] + 1;
+			else if (direction == 2)
+				current_pos[0] = current_pos[0] + 1;
+			else if (prev_direction == 3)
+				current_pos[1] = current_pos[1] - 1;
+		}
+		else if (action == 1){// turn left
+				if (prev_direction == 0)
+					current_pos[1] = current_pos[1] - 1;
+				else if (prev_direction == 1)
+					current_pos[0] = current_pos[0] - 1;
+				else if (prev_direction == 2)
+					current_pos[1] = current_pos[1] + 1;
+				else if (prev_direction == 3)
+					current_pos[0] = current_pos[0] + 1;
+		}
+		else if (action == 2){// turn right
+				if (prev_direction == 0)
+					current_pos[1] = current_pos[1] + 1;
+				else if (prev_direction == 1)
+					current_pos[0] = current_pos[0] + 1;
+				else if (prev_direction == 2)
+					current_pos[1] = current_pos[1] - 1;
+				else if (prev_direction == 3)
+					current_pos[0] = current_pos[0] - 1;
+		}
+		prev_direction = direction;
+		print_world(current_pos[0], current_pos[1]);
+
 		// check if goal reached
 		int goalReached = 0;
 		for (int i = 0; i < MAX_GOALS; i++){
@@ -243,34 +265,36 @@ int compareArray(int* a,int* b,int size)	{
 	}
 	return 0;
 }
-void print_world(){
-    for (int i = 0; i < MAX_X-1; i++) {
-    	for (int l = 0; l < MAX_Y-1; l++) {
+void print_world(int pos_x, int pos_y){
+    for (int i = 0; i <MAX_Y-1; i++) {
+    	for (int l = 0; l < MAX_X-1; l++) {
     		if (world[i][l] == INT_MAX)
     			printf("INF\t");
-    		else if (start_pos[0] == i && start_pos[1] == l)
+    		else if (pos_x == i && pos_y == l)
     			printf("HERE\t");
     		else
     			printf("%d\t", world[i][l]);
     	}
     	printf("\n");
     }
+	printf("\n");
+
 }
 
 int main(void) {
 	start_new[0] = start[0];
-	start_new[1] = 3.05 - start[1];
+	start_new[1] = start[1];
 	//world initialization
-	for (int row=0; row < MAX_X-1; row++){
-			for (int col=0; col < MAX_Y-1; col++){
+	for (int row=0; row < MAX_Y-1; row++){
+			for (int col=0; col < MAX_X-1; col++){
 				world[row][col] = -1;
 			}
 
 	}
 
 	// translate coordinates to cell in the world
-	start_pos[0] = ceil(start_new[0] / 0.305)  - 1;
-	start_pos[1] = ceil(start_new[1] / 0.305)- 1;
+	start_pos[1] = ceil(start_new[0] / 0.305) -1;
+	start_pos[0] = ceil(start_new[1] / 0.305) -1;
 
 	// the four different goal positions
 	goals[0][0] = ceil((goal[0] / 0.305))  - 1;
